@@ -1,4 +1,4 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Column, CreateDateColumn, DeleteDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 
 @Entity()
 export class User {
@@ -9,9 +9,7 @@ export class User {
     @Column('text')
     fullname!: string;
 
-    @Column('text', {
-        unique: true
-    })
+    @Column('text')
     email!: string;
 
     @Column('text')
@@ -20,8 +18,23 @@ export class User {
     @Column('text')
     phone!: string;
 
-    @Column()
+    @Column('enum', {
+        enum: ['admin', 'user'],
+        default: 'user'
+    })
     role!: string;
 
+    @Column('boolean', {
+        default: true
+    })
+    isActive!: boolean;
 
+    @CreateDateColumn()
+    createdAt!: Date;
+
+    @UpdateDateColumn()
+    updatedAt!: Date;
+
+    @DeleteDateColumn()
+    deletedAt!: Date;
 }

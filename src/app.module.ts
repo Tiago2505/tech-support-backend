@@ -4,7 +4,8 @@ import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
 import {TypeOrmModule} from '@nestjs/typeorm';
 import {ConfigModule} from '@nestjs/config';
-import { JoiValidationSchema } from './common/config/joi.config';
+import { AuthModule } from './auth/auth.module';
+import { JoiValidationSchema } from './common/config';
 
 @Module({
   imports: [
@@ -19,14 +20,16 @@ import { JoiValidationSchema } from './common/config/joi.config';
       type: 'postgres',
       host: process.env.DB_HOST,
       port: +process.env.DB_PORT!,
-      database: process.env.DB_NAME,
-      username: process.env.DB_USERNAME,
-      password: process.env.DB_PASSWORD,
+      database: process.env.POSTGRES_DB,
+      username: process.env.POSTGRES_USER,
+      password: process.env.POSTGRES_PASSWORD,
       autoLoadEntities: true,
       synchronize: true,
     }),
 
     UsersModule,
+
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
