@@ -3,6 +3,8 @@
 /node_modules
 /build
 
+postgres/*
+
 # Logs
 logs
 *.log
@@ -14,7 +16,6 @@ lerna-debug.log*
 
 # OS
 .DS_Store
-
 # Tests
 /coverage
 /.nyc_output
