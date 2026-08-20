@@ -19,8 +19,8 @@ export class User {
     phone!: string;
 
     @Column('enum', {
-        enum: ['admin', 'user'],
-        default: 'user'
+        enum: ['ADMIN', 'USER', 'TECHNICIAN'],
+        default: 'USER'
     })
     role!: string;
 

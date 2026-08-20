@@ -8,7 +8,7 @@ import { ILike, Repository } from 'typeorm';
 
 import { handleError } from '../common/helpers';
 import { BcryptAdapter } from 'src/common/config';
-import { CreateUserDto, UpdateUserDto } from './dto';
+import { CreateUserDto, CreateUserResponseDto, UpdateUserDto } from './dto';
 import { User } from './entities';
 
 @Injectable()
@@ -18,7 +18,7 @@ export class UsersService {
     private readonly userRepository: Repository<User>,
   ) {}
 
-  async create(createUserDto: CreateUserDto) {
+  async create(createUserDto: CreateUserDto): Promise<CreateUserResponseDto> {
     try {
       const user = await this.findOne(createUserDto.email);
 
@@ -33,16 +33,15 @@ export class UsersService {
 
       await this.userRepository.save(newUser);
 
-      const { password, ...properties } = newUser;
+        const {password, ...properties} = newUser
 
       return properties;
     } catch (error) {
-      console.error(error);
       handleError(error);
     }
   }
 
-  async findAll() {
+  async findAll(): Promise<CreateUserResponseDto[]> {
     try {
       return await this.userRepository.find();
     } catch (error) {
@@ -50,7 +49,7 @@ export class UsersService {
     }
   }
 
-  async findOne(term: number | string) {
+  async findOne(term: number | string): Promise<CreateUserResponseDto | null > {
     try {
       let user: User | null;
 
@@ -73,7 +72,7 @@ export class UsersService {
     }
   }
 
-  async findOneWithPassword(email: string) {
+  async findOneWithPassword(email: string): Promise<User> {
     try {
       const user = await this.userRepository.findOne({ where: { email } });
 
@@ -91,17 +90,20 @@ export class UsersService {
 
       if (!user) throw new NotFoundException(`User with id: ${id} not found`);
 
-      const { password, ...properties } = updateUserDto;
+      const { password, email, ...properties } = updateUserDto;
 
       await this.userRepository.update(id, properties);
 
-      return properties;
+      return {
+        properties,
+        email
+      };
     } catch (error) {
       handleError(error);
     }
   }
 
-  async remove(id: number) {
+  async remove(id: number): Promise<CreateUserResponseDto> {
     try {
       const user = await this.findOne(id);
 
