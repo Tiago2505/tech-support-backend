@@ -5,6 +5,7 @@ import {
   Body,
   Param,
   ParseIntPipe,
+  Req,
 } from '@nestjs/common';
 import { AuditService } from './audit.service';
 import { CreateAuditDto } from './dto';
@@ -13,12 +14,11 @@ import { CreateAuditDto } from './dto';
 export class AuditController {
   constructor(private readonly auditService: AuditService) {}
 
-  @Post(':id')
   create(
-    @Param('id', ParseIntPipe) id: number,
     @Body() createAuditDto: CreateAuditDto,
+    @Req() req: Request
   ) {
-    return this.auditService.create(id, createAuditDto);
+    return this.auditService.create((req as any).user.id, createAuditDto);
   }
 
   @Get()

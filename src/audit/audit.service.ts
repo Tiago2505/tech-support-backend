@@ -1,9 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { handleError } from 'src/common/helpers';
 import { Repository } from 'typeorm';
 import { AuditLog } from './entities';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateAuditDto } from './dto';
+import { handleError } from 'src/common';
 
 @Injectable()
 export class AuditService {

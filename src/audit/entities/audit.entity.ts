@@ -24,12 +24,8 @@ export class AuditLog {
     @Column()
     performedById!: number;
 
-    @ManyToOne(()=> User)
-    @JoinColumn({name: 'affectedUserId'})
-    affectedUser!: User;
-
     @Column()
-    affectedUserId!: number;
+    affectedRecordId!: number;
 
     @CreateDateColumn()
     createdAt!: Date;

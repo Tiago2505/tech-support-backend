@@ -5,9 +5,10 @@ import { UsersModule } from './users/users.module';
 import {TypeOrmModule} from '@nestjs/typeorm';
 import {ConfigModule} from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
-import { JoiValidationSchema } from './common/config';
 import { AuditModule } from './audit/audit.module';
 import { TicketsModule } from './tickets/tickets.module';
+import { JoiValidationSchema } from './common';
+import { CommonModule } from './common/common.module';
 
 @Module({
   imports: [
@@ -36,6 +37,9 @@ import { TicketsModule } from './tickets/tickets.module';
     AuditModule,
 
     TicketsModule,
+
+    CommonModule,
+
   ],
   controllers: [AppController],
   providers: [AppService],

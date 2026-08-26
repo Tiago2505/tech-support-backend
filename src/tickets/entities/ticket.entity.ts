@@ -1,6 +1,7 @@
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, CreateDateColumn, DeleteDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { CategoryTicket, DeviceType, OperatingSystem, PriorityTicket, StatusTicket } from "../enums";
 import { User } from "src/users/entities";
+import { IsOptional } from "class-validator";
 
 @Entity()
 export class Ticket {
@@ -15,19 +16,22 @@ export class Ticket {
     description!: string;
 
     @Column('enum',{
-        enum: [StatusTicket]
+        enum: StatusTicket,
+        default: StatusTicket.OPEN
     })
-    status!: StatusTicket;
+    status?: StatusTicket;
 
     @Column('enum',{
-        enum: [PriorityTicket]
+        enum: PriorityTicket,
+        default: PriorityTicket.MEDIUM,
     })
-    priority!: PriorityTicket;
+    priority?: PriorityTicket;
 
     @Column('enum', {
-        enum: [CategoryTicket]
+        enum: CategoryTicket,
+        default: CategoryTicket.HARDWARE
     })
-    categoryTicket!: CategoryTicket;
+    categoryTicket?: CategoryTicket;
 
     @ManyToOne(()=>User)
     @JoinColumn({name: 'createdBy'})
@@ -38,33 +42,41 @@ export class Ticket {
 
     @ManyToOne(()=>User)
     @JoinColumn({name: 'technicianId'})
-    technician!: User;
+    technician?: User;
 
-    @Column()
-    technicianId!: number;
+    @Column({
+        nullable: true
+    })
+    technicianId?: number;
 
     @Column('enum',{
-        enum: [DeviceType]
+        enum: DeviceType,
+        default: DeviceType.DESKTOP
     })
-    deviceType!: DeviceType;
+    deviceType?: DeviceType;
 
-    @Column('text')
-    deviceBrand!: string;
+    @Column('text', {nullable: true})
+    deviceBrand?: string;
 
-    @Column('text')
-    deviceModel!: string;
+    @Column('text', {nullable: true})
+    deviceModel?: string;
 
     @Column('enum',{
-        enum: [OperatingSystem]
+        enum: OperatingSystem,
+        default: OperatingSystem.WINDOWS
     })
-    operatingSystem!: OperatingSystem;
+    operatingSystem?: OperatingSystem;
 
     @CreateDateColumn()
     createdAt!: Date;
 
-    @Column('date')
+    @DeleteDateColumn()
+    deletedAt?: Date;
+
+    @Column('date', {nullable: true})
     resolvedAt!: Date;
 
-    @Column('date')
+    @Column('date', {nullable: true})
     closedAt!: Date;
 }
+

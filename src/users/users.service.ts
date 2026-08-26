@@ -6,16 +6,19 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { ILike, Repository } from 'typeorm';
 
-import { handleError } from '../common/helpers';
-import { BcryptAdapter } from 'src/common/config';
 import { CreateUserDto, CreateUserResponseDto, UpdateUserDto } from './dto';
 import { User } from './entities';
+import { BcryptAdapter, handleError } from 'src/common';
+import { AuditService } from 'src/audit/audit.service';
+import { Action, CreateAuditDto, Entity } from 'src/audit/dto';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+
+    private readonly auditService: AuditService, 
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<CreateUserResponseDto> {
@@ -84,7 +87,7 @@ export class UsersService {
     }
   }
 
-  async update(id: number, updateUserDto: UpdateUserDto) {
+  async update(id: number, updateUserDto: UpdateUserDto, performedById: number) {
     try {
       const user = await this.findOne(id);
 
@@ -93,6 +96,14 @@ export class UsersService {
       const { password, email, ...properties } = updateUserDto;
 
       await this.userRepository.update(id, properties);
+
+      const auditDto: CreateAuditDto = {
+        action: Action.UPDATE,
+        entity: Entity.USER,
+        affectedRecordId: id
+      }
+
+      await this.auditService.create(performedById, auditDto);
 
       return {
         properties,
@@ -103,13 +114,21 @@ export class UsersService {
     }
   }
 
-  async remove(id: number): Promise<CreateUserResponseDto> {
+  async remove(id: number, performedById: number): Promise<CreateUserResponseDto> {
     try {
       const user = await this.findOne(id);
 
       if (!user) throw new NotFoundException(`User with id: ${id} not found`);
 
       await this.userRepository.softDelete(id);
+
+      const auditDto: CreateAuditDto = {
+        action: Action.DELETE,
+        entity: Entity.USER,
+        affectedRecordId: id
+      }
+
+      await this.auditService.create(performedById, auditDto);
 
       return user;
     } catch (error) {
