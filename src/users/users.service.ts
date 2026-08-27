@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ILike, Repository } from 'typeorm';
+import { Like, Repository } from 'typeorm';
 
 import { CreateUserDto, CreateUserResponseDto, UpdateUserDto } from './dto';
 import { User } from './entities';
@@ -52,20 +52,21 @@ export class UsersService {
     }
   }
 
+  //TODO: cambiar este metodo
   async findOne(term: number | string): Promise<CreateUserResponseDto | null > {
     try {
       let user: User | null;
 
       if (isNaN(+term)) {
         user = await this.userRepository.findOne({
-          where: { email: ILike(`${term}`) },
+          where: { email: Like(`${term}`) },
         });
       } else {
         user = await this.userRepository.findOne({
           where: { id: +term },
         });
       }
-      if (!user || user.deletedAt !== null) return null;
+      if (!user) return null;
 
       const { password, ...properties } = user;
 
@@ -97,6 +98,8 @@ export class UsersService {
 
       await this.userRepository.update(id, properties);
 
+      const userUpdated = await this.findOne(id);
+
       const auditDto: CreateAuditDto = {
         action: Action.UPDATE,
         entity: Entity.USER,
@@ -105,10 +108,8 @@ export class UsersService {
 
       await this.auditService.create(performedById, auditDto);
 
-      return {
-        properties,
-        email
-      };
+      return userUpdated;
+      
     } catch (error) {
       handleError(error);
     }

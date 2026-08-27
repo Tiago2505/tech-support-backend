@@ -1,4 +1,13 @@
-import { Controller, Get, Body, Patch, Param, Delete, ParseIntPipe, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  ParseIntPipe,
+  Req,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto';
 
@@ -13,16 +22,22 @@ export class UsersController {
 
   @Get(':term')
   findOne(@Param('term') term: string) {
-    return this.usersService.findOne(term);
+    const value = isNaN(Number(term)) ? term : Number(term);
+
+    return this.usersService.findOne(value);
   }
 
   @Patch(':id')
-  update(@Param('id', ParseIntPipe) id: number, @Body() updateUserDto: UpdateUserDto, @Req() req: Request) {
-    return this.usersService.update(id, updateUserDto, (req as any).user.id  );
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateUserDto: UpdateUserDto,
+    @Req() req: Request,
+  ) {
+    return this.usersService.update(id, updateUserDto, (req as any).user.id);
   }
 
   @Delete(':id')
   remove(@Param('id', ParseIntPipe) id: number, @Req() req: Request) {
-    return this.usersService.remove(id, (req as any).user.id );
+    return this.usersService.remove(id, (req as any).user.id);
   }
 }

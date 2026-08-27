@@ -3,7 +3,7 @@ import { UsersService } from 'src/users/users.service';
 import { LoginDto } from './dto';
 import { CreateUserDto } from 'src/users/dto';
 import { ConfigService } from '@nestjs/config';
-import { BcryptAdapter, JwtAdapter } from 'src/common';
+import { BcryptAdapter, handleError, JwtAdapter } from 'src/common';
 
 @Injectable()
 export class AuthService {
@@ -19,57 +19,69 @@ export class AuthService {
 
   async create(createUserDto: CreateUserDto) {
 
-    const user = await this.usersService.create(createUserDto);
-
-    const seed = this.configService.get<string>('SEED');
-
-    const payload = {
-      id: user.id,
-      fullname: user.fullname,
-      email: user.email,
-      phone: user.phone,
-      role: user.role,
-      isActive: user.isActive,
+    try {
+      
+      const user = await this.usersService.create(createUserDto);
+  
+      const seed = this.configService.get<string>('SEED');
+  
+      const payload = {
+        id: user.id,
+        fullname: user.fullname,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        isActive: user.isActive,
+      }
+  
+      const token = await JwtAdapter.generateToken(seed!, payload);
+      return{
+        user,
+        token
+      }
+    } catch (error) {
+      handleError(error);
     }
 
-    const token = await JwtAdapter.generateToken(seed!, payload);
-    return{
-      user,
-      token
-    }
   }
 
   async login(loginDto: LoginDto){
 
-    const {email, password} = loginDto;
-    
-    const user = await this.usersService.findOne(email);
-
-    if(!user) throw new NotFoundException(`User with email ${email} not found`);
-
-    const userDB = await this.usersService.findOneWithPassword(email); 
-
-    if(!BcryptAdapter.compare(password, userDB!.password)){
-      throw new UnauthorizedException('The password does not match'); 
+    try {
+      
+      const {email, password} = loginDto;
+      
+      const user = await this.usersService.findOne(email);
+  
+      if(!user) throw new NotFoundException(`User with email ${email} not found`);
+  
+      const userDB = await this.usersService.findOneWithPassword(email); 
+  
+      if(!BcryptAdapter.compare(password, userDB!.password)){
+        throw new UnauthorizedException('The password does not match'); 
+      }
+  
+      const seed = this.configService.get<string>('SEED');
+  
+      const payload = {
+        id: user.id,
+        fullname: user.fullname,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        isActive: user.isActive,
+      }
+  
+      const token = await JwtAdapter.generateToken(seed!, payload);
+  
+      return{
+        user,
+        token
+      }
+    } catch (error) {
+      handleError(error);
     }
 
-    const seed = this.configService.get<string>('SEED');
-
-    const payload = {
-      id: user.id,
-      fullname: user.fullname,
-      email: user.email,
-      phone: user.phone,
-      role: user.role,
-      isActive: user.isActive,
-    }
-
-    const token = await JwtAdapter.generateToken(seed!, payload);
-
-    return{
-      user,
-      token
-    }
 
   }
 }

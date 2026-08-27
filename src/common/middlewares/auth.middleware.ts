@@ -7,6 +7,7 @@ import {
 import { JwtAdapter } from '../config';
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from 'src/users/users.service';
+import { handleError } from '../helpers';
 
 @Injectable()
 export class AuthMiddleware implements NestMiddleware {
@@ -42,8 +43,7 @@ export class AuthMiddleware implements NestMiddleware {
 
       next();
     } catch (error) {
-      console.log(error);
-      res.status(500).json('Internal server error');
+      handleError(error);
     }
   }
 }

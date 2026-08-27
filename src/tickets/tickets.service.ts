@@ -82,6 +82,8 @@ export class TicketsService {
 
       await this.ticketRepository.update(id, updateTicketDto);
 
+      const ticketUpdated = await this.findByTerm(id);
+
       const auditDto: CreateAuditDto = {
         action: Action.UPDATE,
         entity: Entity.TICKET,
@@ -90,7 +92,7 @@ export class TicketsService {
 
       await this.auditService.create(updatedBy, auditDto);
 
-      return updateTicketDto;
+      return ticketUpdated;
     } catch (error) {
       handleError(error);
     }
