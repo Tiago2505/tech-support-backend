@@ -9,13 +9,15 @@ import { AuditModule } from './audit/audit.module';
 import { TicketsModule } from './tickets/tickets.module';
 import { JoiValidationSchema } from './common';
 import { CommonModule } from './common/common.module';
+import { CloudinaryModule } from './cloudinary/cloudinary.module';
 
 @Module({
   imports: [
 
     ConfigModule.forRoot({
 
-      validationSchema: JoiValidationSchema
+      validationSchema: JoiValidationSchema,
+      isGlobal: true
 
     }),
 
@@ -39,6 +41,10 @@ import { CommonModule } from './common/common.module';
     TicketsModule,
 
     CommonModule,
+
+    ConfigModule,
+
+    CloudinaryModule,
 
   ],
   controllers: [AppController],
