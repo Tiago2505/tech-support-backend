@@ -1,7 +1,9 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Like, Repository } from 'typeorm';
@@ -11,6 +13,7 @@ import { User } from './entities';
 import { BcryptAdapter, handleError } from 'src/common';
 import { AuditService } from 'src/audit/audit.service';
 import { Action, CreateAuditDto, Entity } from 'src/audit/dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Injectable()
 export class UsersService {
@@ -18,7 +21,7 @@ export class UsersService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
 
-    private readonly auditService: AuditService, 
+    private readonly auditService: AuditService,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<CreateUserResponseDto> {
@@ -36,7 +39,7 @@ export class UsersService {
 
       await this.userRepository.save(newUser);
 
-        const {password, ...properties} = newUser
+      const { password, ...properties } = newUser;
 
       return properties;
     } catch (error) {
@@ -52,12 +55,11 @@ export class UsersService {
     }
   }
 
-  //TODO: cambiar este metodo
-  async findOne(term: number | string): Promise<CreateUserResponseDto | null > {
+  async findOne(term: number | string): Promise<CreateUserResponseDto | null> {
     try {
       let user: User | null;
 
-      if (isNaN(+term)) {
+      if (isNaN(Number(term))) {
         user = await this.userRepository.findOne({
           where: { email: Like(`${term}`) },
         });
@@ -80,7 +82,8 @@ export class UsersService {
     try {
       const user = await this.userRepository.findOne({ where: { email } });
 
-      if(!user) throw new NotFoundException(`User with email: ${email} not found`);
+      if (!user)
+        throw new NotFoundException(`User with email: ${email} not found`);
 
       return user;
     } catch (error) {
@@ -88,7 +91,11 @@ export class UsersService {
     }
   }
 
-  async update(id: number, updateUserDto: UpdateUserDto, performedById: number) {
+  async update(
+    id: number,
+    updateUserDto: UpdateUserDto,
+    performedById: number,
+  ) {
     try {
       const user = await this.findOne(id);
 
@@ -103,19 +110,21 @@ export class UsersService {
       const auditDto: CreateAuditDto = {
         action: Action.UPDATE,
         entity: Entity.USER,
-        affectedRecordId: id
-      }
+        affectedRecordId: id,
+      };
 
       await this.auditService.create(performedById, auditDto);
 
       return userUpdated;
-      
     } catch (error) {
       handleError(error);
     }
   }
 
-  async remove(id: number, performedById: number): Promise<CreateUserResponseDto> {
+  async remove(
+    id: number,
+    performedById: number,
+  ): Promise<CreateUserResponseDto> {
     try {
       const user = await this.findOne(id);
 
@@ -126,8 +135,8 @@ export class UsersService {
       const auditDto: CreateAuditDto = {
         action: Action.DELETE,
         entity: Entity.USER,
-        affectedRecordId: id
-      }
+        affectedRecordId: id,
+      };
 
       await this.auditService.create(performedById, auditDto);
 
@@ -135,5 +144,37 @@ export class UsersService {
     } catch (error) {
       handleError(error);
     }
+  }
+
+  async changePassword(email: string, changePasswordDto: ChangePasswordDto) {
+    
+    try {
+      const user = await this.findOneWithPassword(email);
+  
+      const {password, ...properties} = user;
+  
+      const {currentPassword} = changePasswordDto;
+
+      const match = BcryptAdapter.compare(currentPassword, password);
+  
+      if(!match) throw new UnauthorizedException('The password does not match'); 
+      
+      const isSamePassword = BcryptAdapter.compare(changePasswordDto.newPassword, password);
+
+      if(isSamePassword) throw new BadRequestException('The new password must be different from the current password');
+  
+  
+      changePasswordDto.newPassword = BcryptAdapter.hash(changePasswordDto.newPassword);
+  
+      await this.userRepository.update(properties.id, {
+        password: changePasswordDto.newPassword
+      });
+  
+      return properties;
+      
+    } catch (error) {
+      handleError(error);
+    }
+
   }
 }

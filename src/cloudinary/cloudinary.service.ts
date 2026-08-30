@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { handleError } from 'src/common';
 import { v2 as cloudinary } from 'cloudinary';
 import { ConfigService } from '@nestjs/config';
+import { ImageDto } from './dtos';
 
 @Injectable()
 export class CloudinaryService {
@@ -13,7 +14,7 @@ export class CloudinaryService {
     });
   }
 
-  async uploadImages(files: Express.Multer.File[], folder: string) {
+  async uploadImages(files: Express.Multer.File[], folder: string = 'tickets') {
     try {
       const result = await Promise.all(
         files.map((file) =>
@@ -33,6 +34,22 @@ export class CloudinaryService {
       }));
     } catch (error) {
       console.log(error);
+      handleError(error);
+    }
+  }
+
+
+  async deleteImages(deleteImagesDto: ImageDto[]){
+    try {
+      
+      const result = await cloudinary.api.delete_resources(deleteImagesDto.map(image => image.publicId), {
+        resource_type: 'image',
+      });
+
+
+      return result.deleted;
+
+    } catch (error) {
       handleError(error);
     }
   }

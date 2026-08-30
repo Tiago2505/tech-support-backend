@@ -1,3 +1,5 @@
+import { UserRole } from "../enums";
+
 export interface CreateUserResponseDto {
   id: number;
 
@@ -7,7 +9,7 @@ export interface CreateUserResponseDto {
 
   phone: string;
 
-  role: string;
+  role: UserRole;
 
   isActive: boolean;
 

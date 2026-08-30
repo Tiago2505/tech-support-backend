@@ -1,5 +1,5 @@
-import { IsDate, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, MaxLength, Min, MinLength } from "class-validator";
-import { CategoryTicket, DeviceType, PriorityTicket, StatusTicket } from "../enums";
+import { IsArray, IsDate, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, MaxLength, Min, MinLength } from "class-validator";
+import { CategoryTicket, DeviceType, OperatingSystem, PriorityTicket, StatusTicket } from "../enums";
 import { Type } from "class-transformer";
 
 export class CreateTicketDto {
@@ -17,33 +17,37 @@ export class CreateTicketDto {
 
     @IsEnum(StatusTicket)
     @IsOptional()
-    status?: StatusTicket;
+    status!: StatusTicket;
 
     @IsEnum(PriorityTicket)
     @IsOptional()
-    priority?: PriorityTicket;
+    priority!: PriorityTicket;
 
     @IsEnum(CategoryTicket)
     @IsOptional()
-    categoryTicket?: CategoryTicket;
+    categoryTicket!: CategoryTicket;
 
     @IsNumber()
     @Min(1)
     @IsOptional()
     @Type(()=>Number)
-    technicianId?: number;
+    technicianId!: number;
 
     @IsEnum(DeviceType)
     @IsOptional()
-    deviceType?: DeviceType;
+    deviceType!: DeviceType;
 
     @IsString()
     @IsOptional()
-    deviceBrand?: string;
+    deviceBrand!: string;
     
     @IsString()
     @IsOptional()
-    deviceModel?: string;
+    deviceModel!: string;
+
+    @IsEnum(OperatingSystem)
+    @IsOptional()
+    operatingSystem!: OperatingSystem;
 
 
 }

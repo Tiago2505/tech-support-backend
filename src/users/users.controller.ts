@@ -7,9 +7,11 @@ import {
   Delete,
   ParseIntPipe,
   Req,
+  Post
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Controller('users')
 export class UsersController {
@@ -39,5 +41,12 @@ export class UsersController {
   @Delete(':id')
   remove(@Param('id', ParseIntPipe) id: number, @Req() req: Request) {
     return this.usersService.remove(id, (req as any).user.id);
+  }
+
+  @Post('change-password')
+  changePassword(@Req() req: Request, @Body() changePasswordDto: ChangePasswordDto){
+
+    return this.usersService.changePassword((req as any).user.email, changePasswordDto );
+
   }
 }

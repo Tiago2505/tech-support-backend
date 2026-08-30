@@ -1,4 +1,5 @@
 import { Column, CreateDateColumn, DeleteDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { UserRole } from "../enums";
 
 @Entity()
 export class User {
@@ -19,10 +20,10 @@ export class User {
     phone!: string;
 
     @Column('enum', {
-        enum: ['ADMIN', 'USER', 'TECHNICIAN'],
+        enum: UserRole,
         default: 'USER'
     })
-    role!: string;
+    role!: UserRole;
 
     @Column('boolean', {
         default: true
