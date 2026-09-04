@@ -10,6 +10,9 @@ import { TicketsModule } from './tickets/tickets.module';
 import { JoiValidationSchema } from './common';
 import { CommonModule } from './common/common.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { OpenaiModule } from './openai/openai.module';
+import { AgentModule } from './agent/agent.module';
+import { TicketNotesModule } from './ticket-notes/ticket-notes.module';
 
 @Module({
   imports: [
@@ -45,6 +48,12 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
     ConfigModule,
 
     CloudinaryModule,
+
+    OpenaiModule,
+
+    AgentModule,
+
+    TicketNotesModule,
 
   ],
   controllers: [AppController],

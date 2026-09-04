@@ -1,4 +1,5 @@
 import {
+  ForbiddenException,
   Injectable,
   NestMiddleware,
   NotFoundException,
@@ -38,6 +39,8 @@ export class AuthMiddleware implements NestMiddleware {
       const user = await this.userService.findOne(payload.id);
 
       if (!user) throw new NotFoundException('user not found');
+
+      if(!user.isActive) throw new ForbiddenException('The action cannot be performed because the user is inactive');
 
       req.user = user;
 

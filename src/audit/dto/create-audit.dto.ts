@@ -1,27 +1,20 @@
 import { IsEnum, IsNotEmpty, IsNumber, IsString } from "class-validator";
 import {Type} from 'class-transformer';
+import { AuditAction, AuditEntity } from "../enums";
 
-export enum Action {
-    DELETE = 'DELETE',
-    UPDATE = 'UPDATE'
-}
 
-export enum Entity{
-    USER = 'USER',
-    TICKET = 'TICKET'
-}
 
 export class CreateAuditDto {
 
     @IsString()
-    @IsEnum(Action)
+    @IsEnum(AuditAction)
     @IsNotEmpty()
-    action!: Action;
+    action!: AuditAction;
 
     @IsString()
     @IsNotEmpty()
-    @IsEnum(Entity)
-    entity!: Entity;
+    @IsEnum(AuditEntity)
+    entity!: AuditEntity;
 
     @Type(()=>Number)
     @IsNumber()

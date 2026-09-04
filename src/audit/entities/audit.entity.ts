@@ -1,5 +1,6 @@
 import { User } from "src/users/entities";
 import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { AuditAction, AuditEntity } from "../enums";
 
 @Entity()
 export class AuditLog {
@@ -8,14 +9,14 @@ export class AuditLog {
     id!: number;
 
     @Column('enum',{
-        enum: ['UPDATE', 'DELETE']
+        enum: AuditAction
     })
-    action!: string;
+    action!: AuditAction;
     
     @Column('enum', {
-        enum: ['USER', 'TICKET']
+        enum: AuditEntity
     })
-    entity!: string;
+    entity!: AuditEntity;
 
     @ManyToOne(()=> User)
     @JoinColumn({name: 'performedById'})

@@ -1,14 +1,21 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateTicketDto, ImageDto } from './dto';
 import { ILike, Repository } from 'typeorm';
 import { Ticket } from './entities';
 import { InjectRepository } from '@nestjs/typeorm';
 import { handleError } from 'src/common';
 import { AuditService } from 'src/audit/audit.service';
-import { Action, CreateAuditDto, Entity } from 'src/audit/dto';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { UpdateTicketParams } from './interfaces';
 import { UsersService } from 'src/users/users.service';
+import { OpenaiService } from 'src/openai/openai.service';
+import { CreateAuditDto } from 'src/audit/dto';
+import { AuditAction, AuditEntity } from 'src/audit/enums';
 
 @Injectable()
 export class TicketsService {
@@ -21,27 +28,72 @@ export class TicketsService {
     private readonly cloudinaryService: CloudinaryService,
 
     private readonly userService: UsersService,
+
+    private readonly openaiService: OpenaiService,
   ) {}
 
-  async create(createTicketDto: CreateTicketDto, images: Express.Multer.File[], createdBy: number) {
+  private async getDiagnosis(createTicketDto: CreateTicketDto) {
+    const {
+      deviceBrand,
+      deviceType,
+      deviceModel,
+      operatingSystem,
+      description,
+    } = createTicketDto;
+
+    const prompt = `
+      Analiza el siguiente problema técnico:
+
+      Tipo de dispositivo: ${deviceType}
+      Marca: ${deviceBrand ?? 'No especificada'}
+      Modelo: ${deviceModel ?? 'No especificado'}
+      Sistema operativo: ${operatingSystem ?? 'No especificado'}
+
+      Descripción del problema: ${description}
+    `;
+
+    return JSON.parse(await this.openaiService.getTechnicalDiagnosis(prompt));
+  }
+
+  async create(
+    createTicketDto: CreateTicketDto,
+    images: Express.Multer.File[],
+    createdBy: number,
+  ) {
     try {
+      const { technicianId, description } = createTicketDto;
 
-      const {technicianId} = createTicketDto;
-
-      if(technicianId) {
+      if (technicianId) {
         const user = await this.userService.findOne(technicianId);
 
-        if(!user) throw new NotFoundException(`user with id: ${technicianId} not found`);
+        if (!user)
+          throw new NotFoundException(
+            `user with id: ${technicianId} not found`,
+          );
 
-        if(user!.role !== 'TECHNICIAN') throw new BadRequestException(`User with id: ${technicianId} is not a technician`);
-
+        if (user!.role !== 'TECHNICIAN')
+          throw new BadRequestException(
+            `User with id: ${technicianId} is not a technician`,
+          );
       }
+
+      let diagnosis: object = {};
+
+      if (description) {
+        diagnosis = await this.getDiagnosis(createTicketDto);
+      }
+
+      if (!images) {
+        images = [];
+      }
+
       const uploadedImages = await this.cloudinaryService.uploadImages(images);
 
       const ticket = this.ticketRepository.create({
         ...createTicketDto,
         createdBy,
-        evidence: uploadedImages
+        evidence: uploadedImages,
+        aiDiagnosis: diagnosis,
       });
 
       await this.ticketRepository.save(ticket);
@@ -60,17 +112,17 @@ export class TicketsService {
     }
   }
 
-  async findOne(id: number){
+  async findOne(id: number) {
     try {
-       const ticket = await this.ticketRepository.findOne({
-          where: { id: id },
-        });
+      const ticket = await this.ticketRepository.findOne({
+        where: { id: id },
+      });
 
-        if (!ticket) {
-          throw new NotFoundException(`Ticket with id: ${id} not found`);
-        }
+      if (!ticket) {
+        throw new NotFoundException(`Ticket with id: ${id} not found`);
+      }
 
-        return ticket;
+      return ticket;
     } catch (error) {
       handleError(error);
     }
@@ -97,48 +149,76 @@ export class TicketsService {
     }
   }
 
-  async update(
-    updateTicketParams: UpdateTicketParams
-  ) {
+  async update(updateTicketParams: UpdateTicketParams) {
     try {
-
-      const {id, updateTicketDto, updatedBy, newImages} = updateTicketParams;
-
-      const {technicianId} = updateTicketDto;
-
-      if(technicianId) {
-        const user = await this.userService.findOne(technicianId);
-
-        if(!user) throw new NotFoundException(`user with id: ${technicianId} not found`);
-
-        if(user!.role !== 'TECHNICIAN') throw new BadRequestException(`User with id: ${technicianId} is not a technician`);
-
-      }
+      const { id, updateTicketDto, updatedBy, newImages } = updateTicketParams;
 
       await this.findOne(id);
 
-      const {currentImages, deletedCurrentImages, ...properties} = updateTicketDto;
+      const {
+        technicianId,
+        currentImages,
+        deletedCurrentImages,
+        description,
+        ...properties
+      } = updateTicketDto;
 
-      if( deletedCurrentImages && deletedCurrentImages.length > 0) await this.cloudinaryService.deleteImages(deletedCurrentImages);
-      
-      let images: ImageDto[] = currentImages ? currentImages : [];
+      if (technicianId !== undefined) {
+        const user = await this.userService.findOne(technicianId);
 
-      if(newImages && newImages.length > 0){
-        const newImagesUploaded = await this.cloudinaryService.uploadImages(newImages);
-      
-        images.push(...newImagesUploaded);
+        if (!user) {
+          throw new NotFoundException(
+            `user with id: ${technicianId} not found`,
+          );
+        }
+
+        if (user.role !== 'TECHNICIAN') {
+          throw new BadRequestException(
+            `User with id: ${technicianId} is not a technician`,
+          );
+        }
       }
 
-      await this.ticketRepository.update(id, {
+      if (deletedCurrentImages?.length) {
+        await this.cloudinaryService.deleteImages(deletedCurrentImages);
+      }
+
+      const updateData: Partial<Ticket> = {
         ...properties,
-        evidence: images,
-      });
+      };
+
+      if (technicianId !== undefined) {
+        updateData.technicianId = technicianId;
+      }
+
+      if (description !== undefined) {
+        updateData.description = description;
+
+        updateData.aiDiagnosis = JSON.parse(
+          await this.openaiService.getTechnicalDiagnosis(description),
+        );
+      }
+
+      if (currentImages !== undefined || newImages?.length) {
+        let images = currentImages ?? [];
+
+        if (newImages?.length) {
+          const newImagesUploaded =
+            await this.cloudinaryService.uploadImages(newImages);
+
+          images = [...images, ...newImagesUploaded];
+        }
+
+        updateData.evidence = images;
+      }
+
+      await this.ticketRepository.update(id, updateData);
 
       const ticketUpdated = await this.findOne(id);
 
       const auditDto: CreateAuditDto = {
-        action: Action.UPDATE,
-        entity: Entity.TICKET,
+        action: AuditAction.UPDATE,
+        entity: AuditEntity.TICKET,
         affectedRecordId: id,
       };
 
@@ -157,8 +237,8 @@ export class TicketsService {
       await this.ticketRepository.softDelete(id);
 
       const auditDto: CreateAuditDto = {
-        action: Action.DELETE,
-        entity: Entity.TICKET,
+        action: AuditAction.DELETE,
+        entity: AuditEntity.TICKET,
         affectedRecordId: id,
       };
 
@@ -170,29 +250,12 @@ export class TicketsService {
     }
   }
 
-  async resolve(id: number) {
-    try {
-      const ticket = await this.findOne(id);
-
-      if(ticket!.resolvedAt) throw new ConflictException(`Ticket with id: ${id} is already resolved`);
-
-      await this.ticketRepository.update(id, {
-        resolvedAt: new Date(),
-      });
-
-      const ticketResolved = await this.findOne(id);
-
-      return ticketResolved;
-    } catch (error) {
-      handleError(error);
-    }
-  }
-
   async close(id: number) {
     try {
       const ticket = await this.findOne(id);
 
-      if(ticket!.closedAt) throw new ConflictException(`Ticket with id: ${id} is already closed`);
+      if (ticket!.closedAt)
+        throw new ConflictException(`Ticket with id: ${id} is already closed`);
 
       await this.ticketRepository.update(id, {
         closedAt: new Date(),

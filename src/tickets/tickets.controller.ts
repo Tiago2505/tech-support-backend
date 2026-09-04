@@ -10,12 +10,15 @@ import {
   Req,
   UseInterceptors,
   UploadedFiles,
+  UseGuards,
 } from '@nestjs/common';
 import { TicketsService } from './tickets.service';
 import { CreateTicketDto, UpdateTicketDto } from './dto';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { UpdateTicketParams } from './interfaces';
+import { AdminRoleGuard } from 'src/common/guards';
+import path from 'path';
 
 @Controller('tickets')
 export class TicketsController {
@@ -29,7 +32,11 @@ export class TicketsController {
         files: 5,
       },
       fileFilter: (req, file, cb) => {
-        if (file.mimetype.startsWith('image')) {
+        const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp'];
+
+        const extension = path.extname(file.originalname).toLowerCase();
+
+        if (allowedExtensions.includes(extension)) {
           cb(null, true);
         } else {
           cb(null, false);
@@ -72,7 +79,11 @@ export class TicketsController {
         files: 5,
       },
       fileFilter: (req, file, cb) => {
-        if (file.mimetype.startsWith('image')) {
+        const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp'];
+
+        const extension = path.extname(file.originalname).toLowerCase();
+
+        if (allowedExtensions.includes(extension)) {
           cb(null, true);
         } else {
           cb(null, false);
@@ -84,30 +95,22 @@ export class TicketsController {
     @Param('id', ParseIntPipe) id: number,
     @Body() updateTicketDto: UpdateTicketDto,
     @Req() req: Request,
-    @UploadedFiles() newImages: Express.Multer.File[]
+    @UploadedFiles() newImages: Express.Multer.File[],
   ) {
-
     const updateParams: UpdateTicketParams = {
       id,
       updateTicketDto,
       newImages,
-      updatedBy: (req as any).user.id
-    }
+      updatedBy: (req as any).user.id,
+    };
 
-
-    return this.ticketsService.update(
-      updateParams
-    );
+    return this.ticketsService.update(updateParams);
   }
 
   @Delete(':id')
+  @UseGuards(AdminRoleGuard)
   remove(@Param('id', ParseIntPipe) id: number, @Req() req: Request) {
     return this.ticketsService.remove(id, (req as any).user.id);
-  }
-
-  @Post('resolve/:id')
-  resolve(@Param('id', ParseIntPipe) id: number) {
-    return this.ticketsService.resolve(id);
   }
 
   @Post('close/:id')

@@ -1,7 +1,4 @@
-import {
-  MiddlewareConsumer,
-  Module,
-} from '@nestjs/common';
+import { MiddlewareConsumer, Module } from '@nestjs/common';
 
 import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
@@ -14,25 +11,15 @@ import { AuthMiddleware } from 'src/common/middlewares';
 @Module({
   controllers: [UsersController],
 
-  providers: [
-    UsersService,
-  ],
+  providers: [UsersService],
 
-  imports: [
-    TypeOrmModule.forFeature([User]),
-    ConfigModule,
-    AuditModule,
-  ],
+  imports: [TypeOrmModule.forFeature([User]), ConfigModule, AuditModule],
 
-  exports: [
-    UsersService,
-  ],
+  exports: [UsersService],
 })
 export class UsersModule {
-
   configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(AuthMiddleware)
-      .forRoutes('users');
+    consumer.apply(AuthMiddleware).forRoutes('users');
+
   }
 }

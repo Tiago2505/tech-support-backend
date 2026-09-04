@@ -12,8 +12,9 @@ import { CreateUserDto, CreateUserResponseDto, UpdateUserDto } from './dto';
 import { User } from './entities';
 import { BcryptAdapter, handleError } from 'src/common';
 import { AuditService } from 'src/audit/audit.service';
-import { Action, CreateAuditDto, Entity } from 'src/audit/dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { CreateAuditDto } from 'src/audit/dto';
+import { AuditAction, AuditEntity } from 'src/audit/enums';
 
 @Injectable()
 export class UsersService {
@@ -65,7 +66,7 @@ export class UsersService {
         });
       } else {
         user = await this.userRepository.findOne({
-          where: { id: +term },
+          where: { id: Number(term) },
         });
       }
       if (!user) return null;
@@ -108,8 +109,8 @@ export class UsersService {
       const userUpdated = await this.findOne(id);
 
       const auditDto: CreateAuditDto = {
-        action: Action.UPDATE,
-        entity: Entity.USER,
+        action: AuditAction.UPDATE,
+        entity: AuditEntity.USER,
         affectedRecordId: id,
       };
 
@@ -133,8 +134,8 @@ export class UsersService {
       await this.userRepository.softDelete(id);
 
       const auditDto: CreateAuditDto = {
-        action: Action.DELETE,
-        entity: Entity.USER,
+        action: AuditAction.DELETE,
+        entity: AuditEntity.USER,
         affectedRecordId: id,
       };
 

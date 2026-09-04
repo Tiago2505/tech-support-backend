@@ -16,6 +16,7 @@ import {
 } from '../enums';
 import { User } from 'src/users/entities';
 import { ImageDto } from '../dto';
+import type { TicketDiagnosisResponse } from 'src/openai/dto';
 
 @Entity()
 export class Ticket {
@@ -83,14 +84,16 @@ export class Ticket {
   })
   operatingSystem!: OperatingSystem;
 
+  @Column( 'jsonb', {
+    nullable: true
+  })
+  aiDiagnosis!: TicketDiagnosisResponse;
+
   @CreateDateColumn()
   createdAt!: Date;
 
   @DeleteDateColumn()
   deletedAt!: Date;
-
-  @Column('timestamp', { nullable: true })
-  resolvedAt!: Date;
 
   @Column('timestamp', { nullable: true })
   closedAt!: Date;
