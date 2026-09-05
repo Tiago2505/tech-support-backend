@@ -7,6 +7,7 @@ import { Repository } from 'typeorm';
 import { AgentConversation } from './entities/agent.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateAgentConversationDto, UpdateAgentConversationDto } from './dtos';
+import { TicketNotesService } from 'src/ticket-notes/ticket-notes.service';
 
 @Injectable()
 export class AgentService {
@@ -16,6 +17,7 @@ export class AgentService {
 
     private readonly openaiService: OpenaiService,
     private readonly ticketService: TicketsService,
+    private readonly ticketNotesService: TicketNotesService
   ) {}
 
   private async create(createAgentConversationDto: CreateAgentConversationDto) {
@@ -81,6 +83,8 @@ export class AgentService {
         } else if (item.name === 'getTicket') {
           const args = JSON.parse(item.arguments);
           const ticket = await this.ticketService.findOne(args.id);
+          const ticketNotes = await this.ticketNotesService.findAll(ticket.id);
+
 
           const ticketInfo = {
             id: ticket.id,
@@ -88,7 +92,7 @@ export class AgentService {
             status: ticket.status,
             priority: ticket.priority,
             categoryTicket: ticket.categoryTicket,
-            technician: ticket.technician ? ticket.technician.fullname : null,
+            notes: ticketNotes.map(note => note.content)
           };
 
           const finalResponse = await this.openaiService.getAgentFinalResponse(

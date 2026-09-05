@@ -16,7 +16,8 @@ import { UsersModule } from 'src/users/users.module';
     TicketsModule,
     AuditModule,
     UsersModule
-  ]
+  ],
+  exports: [TicketNotesService]
 })
 export class TicketNotesModule {
 

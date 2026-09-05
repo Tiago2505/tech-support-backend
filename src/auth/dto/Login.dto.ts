@@ -9,6 +9,5 @@ export class LoginDto {
   
   @IsString()
   @IsNotEmpty()
-  @Matches(REGEX.PASSWORD)
   password!: string
 }
