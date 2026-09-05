@@ -1,5 +1,4 @@
-import { IsEmail, IsNotEmpty, IsString, Matches } from 'class-validator';
-import { REGEX } from 'src/common/regex';
+import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
 
 export class LoginDto {
   @IsString()
