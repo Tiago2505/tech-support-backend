@@ -12,7 +12,6 @@ import { CreateUserDto, CreateUserResponseDto, UpdateUserDto } from './dto';
 import { User } from './entities';
 import { BcryptAdapter, handleError } from 'src/common';
 import { AuditService } from 'src/audit/audit.service';
-import { ChangePasswordDto } from './dto/change-password.dto';
 import { CreateAuditDto } from 'src/audit/dto';
 import { AuditAction, AuditEntity } from 'src/audit/enums';
 

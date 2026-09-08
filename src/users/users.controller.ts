@@ -12,7 +12,6 @@ import {
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto';
-import { ChangePasswordDto } from './dto/change-password.dto';
 import { AdminRoleGuard } from 'src/common/guards';
 
 @Controller('users')

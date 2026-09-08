@@ -1,9 +1,7 @@
 import jwt from 'jsonwebtoken';
 
-
 export class JwtAdapter {
-
-    constructor(private readonly seed: string){}
+  constructor(private readonly seed: string) {}
 
   static generateToken(
     seed: string,

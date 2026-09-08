@@ -2,7 +2,7 @@ import { User } from "src/users/entities";
 import { Column, CreateDateColumn, Entity, JoinTable, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity()
-export class ResetPassword {
+export class VerificationCode {
 
     @PrimaryGeneratedColumn()
     id!: number;
