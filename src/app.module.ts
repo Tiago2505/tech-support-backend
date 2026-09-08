@@ -13,6 +13,8 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { OpenaiModule } from './openai/openai.module';
 import { AgentModule } from './agent/agent.module';
 import { TicketNotesModule } from './ticket-notes/ticket-notes.module';
+import { VerificationCodeModule } from './verification-code/verification-code.module';
+import { SendEmailModule } from './send-email/send-email.module';
 
 @Module({
   imports: [
@@ -54,6 +56,10 @@ import { TicketNotesModule } from './ticket-notes/ticket-notes.module';
     AgentModule,
 
     TicketNotesModule,
+
+    VerificationCodeModule,
+
+    SendEmailModule,
 
   ],
   controllers: [AppController],

@@ -147,35 +147,26 @@ export class UsersService {
     }
   }
 
-  async changePassword(email: string, changePasswordDto: ChangePasswordDto) {
-    
+  async updatePassword(id: number, newPassword: string){
+
     try {
-      const user = await this.findOneWithPassword(email);
-  
-      const {password, ...properties} = user;
-  
-      const {currentPassword} = changePasswordDto;
-
-      const match = BcryptAdapter.compare(currentPassword, password);
-  
-      if(!match) throw new UnauthorizedException('The password does not match'); 
-      
-      const isSamePassword = BcryptAdapter.compare(changePasswordDto.newPassword, password);
-
-      if(isSamePassword) throw new BadRequestException('The new password must be different from the current password');
-  
-  
-      changePasswordDto.newPassword = BcryptAdapter.hash(changePasswordDto.newPassword);
-  
-      await this.userRepository.update(properties.id, {
-        password: changePasswordDto.newPassword
+      await this.userRepository.update(id, {
+        password: newPassword
       });
-  
-      return properties;
-      
+
+      const auditDto: CreateAuditDto ={
+        entity: AuditEntity.USER,
+        action: AuditAction.UPDATE,
+        affectedRecordId: id
+      }
+
+      await this.auditService.create(id, auditDto);
+
     } catch (error) {
       handleError(error);
     }
 
+
   }
+
 }

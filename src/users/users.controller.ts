@@ -46,10 +46,4 @@ export class UsersController {
     return this.usersService.remove(id, (req as any).user.id);
   }
 
-  @Post('change-password')
-  changePassword(@Req() req: Request, @Body() changePasswordDto: ChangePasswordDto){
-
-    return this.usersService.changePassword((req as any).user.email, changePasswordDto );
-
-  }
 }
