@@ -1,15 +1,12 @@
-
-enum Difficult{
-    LOW ='LOW',
-    MEDIUM='MEDIUM',
-    HIGH='HIGH'
+enum Difficulty {
+  LOW = 'LOW',
+  MEDIUM = 'MEDIUM',
+  HIGH = 'HIGH',
 }
 
-export interface TicketDiagnosisResponse{
-
-    possibleCauses: string[];
-    diagnosticSteps: string[];
-    recommendedSolutions: string[];
-    difficult: Difficult;
-
+export interface TicketDiagnosisResponse {
+  possibleCauses: string[];
+  diagnosticSteps: string[];
+  recommendedSolutions: string[];
+  difficulty: Difficulty;
 }

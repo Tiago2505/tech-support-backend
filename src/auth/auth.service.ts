@@ -6,21 +6,20 @@ import {
 } from '@nestjs/common';
 import { UsersService } from 'src/users/users.service';
 import {
+  ChangePasswordByAdminDto,
   ChangePasswordDto,
   LoginDto,
+  RequestPasswordReset,
   ResetPasswordDto,
   VerifyPasswordResetCodeDto,
 } from './dto';
 import { CreateUserDto } from 'src/users/dto';
 import { ConfigService } from '@nestjs/config';
 import { BcryptAdapter, handleError, JwtAdapter } from 'src/common';
-import { SendEmailService } from 'src/send-email/send-email.service';
-import { SendEmailOptions } from 'src/send-email/interfaces';
 import { VerificationCodeService } from 'src/verification-code/verification-code.service';
 
 @Injectable()
 export class AuthService {
-  
   private seed: string;
 
   constructor(
@@ -35,7 +34,6 @@ export class AuthService {
   async create(createUserDto: CreateUserDto) {
     try {
       const user = await this.usersService.create(createUserDto);
-
 
       const payload = {
         id: user.id,
@@ -142,12 +140,63 @@ export class AuthService {
     }
   }
 
-  async requestPasswordReset(userId: number, email: string) {
+  async changePasswordByAdmin(
+    userId: number,
+    changePasswordDto: ChangePasswordByAdminDto,
+  ) {
     try {
+      const user = await this.usersService.findOne(userId);
+
+      if (!user) {
+        throw new NotFoundException(`User with id: ${userId} not found`);
+      }
+
+      const { newPassword, confirmPassword } = changePasswordDto;
+
+      if (newPassword !== confirmPassword) {
+        throw new BadRequestException(
+          'New password and confirmation do not match',
+        );
+      }
+
+      const userWithPassword = await this.usersService.findOneWithPassword(
+        user.email,
+      );
+
+      const isSamePassword = await BcryptAdapter.compare(
+        newPassword,
+        userWithPassword.password,
+      );
+
+      if (isSamePassword) {
+        throw new BadRequestException(
+          'The new password must be different from the current password',
+        );
+      }
+
+      const hashedPassword = BcryptAdapter.hash(newPassword);
+
+      await this.usersService.updatePassword(
+        userId,
+        hashedPassword,
+      );
+
+      return await this.usersService.findOne(userId);
+    } catch (error) {
+      handleError(error);
+    }
+  }
+
+  async requestPasswordReset(requestPasswordReset: RequestPasswordReset) {
+    try {
+      const user = await this.usersService.findOne(requestPasswordReset.email);
+
+      if (!user) throw new NotFoundException('User not found');
+
       const sendCode =
         await this.verificationCodeService.createNewPasswordReset(
-          userId,
-          email,
+          user.id,
+          user.email,
         );
       return sendCode;
     } catch (error) {
@@ -156,38 +205,54 @@ export class AuthService {
   }
 
   async verifyPasswordResetCode(
-    userId: number,
     verifyPasswordResetCodeDto: VerifyPasswordResetCodeDto,
   ) {
     try {
+      const user = await this.usersService.findOne(
+        verifyPasswordResetCodeDto.email,
+      );
+
+      if (!user) throw new NotFoundException('User not found');
+
       const verifiedCode = await this.verificationCodeService.verifyCode(
-        userId,
+        user.id,
         verifyPasswordResetCodeDto.code,
       );
 
-      const payload ={
-        userId
-      }
+      const payload = {
+        userId: user.id,
+      };
 
-      const passwordResetToken = await JwtAdapter.generateToken(this.seed, payload, '10m');
+      const passwordResetToken = await JwtAdapter.generateToken(
+        this.seed,
+        payload,
+        '10m',
+      );
 
       return {
         code: verifiedCode,
-        passwordResetToken
+        passwordResetToken,
       };
     } catch (error) {
       handleError(error);
     }
   }
 
-  async resetPassword(email: string, resetPasswordDto: ResetPasswordDto) {
+  async resetPassword(resetPasswordDto: ResetPasswordDto) {
     try {
+      const payload = await JwtAdapter.validateToken(
+        resetPasswordDto.passwordResetToken,
+        this.seed,
+      );
 
-      const payload = await JwtAdapter.validateToken(resetPasswordDto.passwordResetToken, this.seed);
+      if (!payload)
+        throw new UnauthorizedException(
+          'Invalid or expired password reset token',
+        );
 
-      if(!payload) throw new UnauthorizedException('Invalid or expired password reset token');
-
-      const user = await this.usersService.findOneWithPassword(email);
+      const user = await this.usersService.findOneWithPassword(
+        resetPasswordDto.email,
+      );
 
       const { newPassword, confirmPassword } = resetPasswordDto;
 

@@ -28,7 +28,9 @@ export class AuditLog {
     @Column()
     affectedRecordId!: number;
 
-    @CreateDateColumn()
+    @CreateDateColumn({
+        type: 'timestamptz'
+    })
     createdAt!: Date;
 
 

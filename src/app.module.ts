@@ -2,8 +2,8 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
-import {TypeOrmModule} from '@nestjs/typeorm';
-import {ConfigModule} from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { AuditModule } from './audit/audit.module';
 import { TicketsModule } from './tickets/tickets.module';
@@ -18,12 +18,9 @@ import { SendEmailModule } from './send-email/send-email.module';
 
 @Module({
   imports: [
-
     ConfigModule.forRoot({
-
       validationSchema: JoiValidationSchema,
-      isGlobal: true
-
+      isGlobal: true,
     }),
 
     TypeOrmModule.forRoot({
@@ -35,6 +32,9 @@ import { SendEmailModule } from './send-email/send-email.module';
       password: process.env.POSTGRES_PASSWORD,
       autoLoadEntities: true,
       synchronize: true,
+      extra: {
+        options: '-c timezone=America/Tegucigalpa',
+      },
     }),
 
     UsersModule,
@@ -60,7 +60,6 @@ import { SendEmailModule } from './send-email/send-email.module';
     VerificationCodeModule,
 
     SendEmailModule,
-
   ],
   controllers: [AppController],
   providers: [AppService],

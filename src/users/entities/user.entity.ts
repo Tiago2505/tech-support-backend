@@ -1,41 +1,55 @@
-import { Column, CreateDateColumn, DeleteDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
-import { UserRole } from "../enums";
+import {
+  Column,
+  CreateDateColumn,
+  DeleteDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
+import { UserRole } from '../enums';
 
 @Entity()
 export class User {
+  @PrimaryGeneratedColumn()
+  id!: number;
 
-    @PrimaryGeneratedColumn()
-    id!: number;
+  @Column('text')
+  fullname!: string;
 
-    @Column('text')
-    fullname!: string;
+  @Column('text')
+  email!: string;
 
-    @Column('text')
-    email!: string;
+  @Column('text')
+  password!: string;
 
-    @Column('text')
-    password!: string;
+  @Column('text')
+  phone!: string;
 
-    @Column('text')
-    phone!: string;
+  @Column('enum', {
+    enum: UserRole,
+    default: 'USER',
+  })
+  role!: UserRole;
 
-    @Column('enum', {
-        enum: UserRole,
-        default: 'USER'
-    })
-    role!: UserRole;
+  @Column('boolean', {
+    default: true,
+  })
+  isActive!: boolean;
 
-    @Column('boolean', {
-        default: true
-    })
-    isActive!: boolean;
+  @CreateDateColumn({
+    type: 'timestamptz',
+  })
+  createdAt!: Date;
 
-    @CreateDateColumn()
-    createdAt!: Date;
+  @UpdateDateColumn({
+    type: 'timestamptz',
+  })
+  updatedAt!: Date;
 
-    @UpdateDateColumn()
-    updatedAt!: Date;
-
-    @DeleteDateColumn()
-    deletedAt!: Date;
+  @DeleteDateColumn({
+    type: 'timestamptz',
+  })
+  deletedAt!: Date;
 }

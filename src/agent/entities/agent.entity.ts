@@ -19,10 +19,14 @@ export class AgentConversation{
     responseId!: string;
 
 
-    @CreateDateColumn()
+    @CreateDateColumn({
+        type: 'timestamptz'
+    })
     createdAt!: Date;
 
-    @UpdateDateColumn()
+    @UpdateDateColumn({
+        type: 'timestamptz'
+    })
     updatedAt!: Date;
 
 

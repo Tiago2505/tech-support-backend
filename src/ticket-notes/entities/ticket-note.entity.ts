@@ -5,7 +5,7 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
-  JoinTable,
+  JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
@@ -19,23 +19,26 @@ export class TicketNote {
   content!: string;
 
   @ManyToOne(() => Ticket)
-  @JoinTable({ name: 'ticketId' })
+  @JoinColumn({ name: 'ticketId' })
   ticket!: Ticket;
 
   @Column()
   ticketId!: number;
 
-  @ManyToOne(()=>User)
-  @JoinTable({name: 'createdBy'})
+  @ManyToOne(() => User)
+  @JoinColumn({ name: 'createdBy' })
   user!: User;
 
   @Column()
   createdBy!: number;
 
-  @CreateDateColumn()
+  @CreateDateColumn({
+    type: 'timestamptz',
+  })
   createdAt!: Date;
 
-  @DeleteDateColumn()
+  @DeleteDateColumn({
+    type: 'timestamptz',
+  })
   deletedAt!: Date;
-
 }

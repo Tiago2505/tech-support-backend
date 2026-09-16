@@ -1,8 +1,12 @@
-import { IsNotEmpty, IsString, Matches } from "class-validator";
+import { IsEmail, IsNotEmpty, IsString, Matches } from "class-validator";
 import { REGEX } from "src/common";
 
 
 export class ResetPasswordDto{
+
+    @IsEmail()
+    @IsNotEmpty()
+    email!: string;
 
     @IsString()
     @IsNotEmpty()

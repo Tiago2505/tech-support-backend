@@ -1,10 +1,11 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { CreateTicketDto, ImageDto } from './dto';
+import { CloseTicketDto, CreateTicketDto } from './dto';
 import { ILike, Repository } from 'typeorm';
 import { Ticket } from './entities';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -16,6 +17,8 @@ import { UsersService } from 'src/users/users.service';
 import { OpenaiService } from 'src/openai/openai.service';
 import { CreateAuditDto } from 'src/audit/dto';
 import { AuditAction, AuditEntity } from 'src/audit/enums';
+import { StatusTicket } from './enums';
+import { TicketDiagnosisResponse } from 'src/openai/dto';
 
 @Injectable()
 export class TicketsService {
@@ -32,7 +35,9 @@ export class TicketsService {
     private readonly openaiService: OpenaiService,
   ) {}
 
-  private async getDiagnosis(createTicketDto: CreateTicketDto) {
+  private async getDiagnosis(
+    createTicketDto: CreateTicketDto,
+  ): Promise<TicketDiagnosisResponse> {
     const {
       deviceBrand,
       deviceType,
@@ -42,17 +47,20 @@ export class TicketsService {
     } = createTicketDto;
 
     const prompt = `
-      Analiza el siguiente problema técnico:
+    Analiza el siguiente problema técnico:
 
-      Tipo de dispositivo: ${deviceType}
-      Marca: ${deviceBrand ?? 'No especificada'}
-      Modelo: ${deviceModel ?? 'No especificado'}
-      Sistema operativo: ${operatingSystem ?? 'No especificado'}
+    Tipo de dispositivo: ${deviceType}
+    Marca: ${deviceBrand ?? 'No especificada'}
+    Modelo: ${deviceModel ?? 'No especificado'}
+    Sistema operativo: ${operatingSystem ?? 'No especificado'}
+    Descripción del problema: ${description}
+  `;
 
-      Descripción del problema: ${description}
-    `;
+    const response = await this.openaiService.getTechnicalDiagnosis(prompt);
 
-    return JSON.parse(await this.openaiService.getTechnicalDiagnosis(prompt));
+    console.log('DIAGNOSTIC JSON:', response);
+
+    return JSON.parse(response);
   }
 
   async create(
@@ -77,7 +85,7 @@ export class TicketsService {
           );
       }
 
-      let diagnosis: object = {};
+      let diagnosis: TicketDiagnosisResponse | null = null;
 
       if (description) {
         diagnosis = await this.getDiagnosis(createTicketDto);
@@ -106,7 +114,11 @@ export class TicketsService {
 
   async findAll() {
     try {
-      return await this.ticketRepository.find();
+      return await this.ticketRepository.find({
+        relations: {
+          user: true,
+        },
+      });
     } catch (error) {
       handleError(error);
     }
@@ -250,7 +262,7 @@ export class TicketsService {
     }
   }
 
-  async close(id: number) {
+  async close(id: number, closeTicketDto: CloseTicketDto) {
     try {
       const ticket = await this.findOne(id);
 
@@ -259,11 +271,98 @@ export class TicketsService {
 
       await this.ticketRepository.update(id, {
         closedAt: new Date(),
+        resolution: closeTicketDto.resolution,
+        status: StatusTicket.CLOSED,
       });
 
       const ticketClosed = await this.findOne(id);
 
       return ticketClosed;
+    } catch (error) {
+      handleError(error);
+    }
+  }
+
+  async reopen(id: number) {
+    try {
+      const ticket = await this.findOne(id);
+
+      if (!ticket!.closedAt)
+        throw new ConflictException(`Ticket with id: ${id} is not closed`);
+
+      await this.ticketRepository.update(id, {
+        closedAt: null,
+        resolution: null,
+        status: StatusTicket.OPEN,
+      });
+
+      const tickedReopen = await this.findOne(id);
+
+      return tickedReopen;
+    } catch (error) {
+      handleError(error);
+    }
+  }
+
+  async findByUser(userId: number) {
+    try {
+      const userExists = await this.userService.findOne(userId);
+
+      if (!userExists)
+        throw new NotFoundException(`user with id: ${userId} not found`);
+
+      const userTickets = await this.ticketRepository.find({
+        where: {
+          createdBy: userId,
+        },
+        relations: {
+          technician: true,
+        },
+      });
+
+      return userTickets;
+    } catch (error) {
+      handleError(error);
+    }
+  }
+
+  async findWithRelations(id: number) {
+    try {
+      await this.findOne(id);
+
+      const ticket = await this.ticketRepository.findOne({
+        where: { id },
+        relations: {
+          technician: true,
+        },
+      });
+
+      return ticket;
+    } catch (error) {
+      handleError(error);
+    }
+  }
+
+  async claim(technicianId: number, ticketId: number) {
+    try {
+      const userExists = await this.userService.findOne(technicianId);
+
+      if (!userExists)
+        throw new NotFoundException(`User with id: ${technicianId} not found`);
+
+      if (userExists.role !== 'TECHNICIAN')
+        throw new ForbiddenException('Only technicians can claim tickets');
+
+      await this.findOne(ticketId);
+
+      await this.ticketRepository.update(ticketId, {
+        technicianId,
+        status: StatusTicket.IN_PROGRESS,
+      });
+
+      const ticketUpdated = await this.findOne(ticketId);
+
+      return ticketUpdated;
     } catch (error) {
       handleError(error);
     }

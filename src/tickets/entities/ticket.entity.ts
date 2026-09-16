@@ -15,8 +15,8 @@ import {
   StatusTicket,
 } from '../enums';
 import { User } from 'src/users/entities';
-import { ImageDto } from '../dto';
 import type { TicketDiagnosisResponse } from 'src/openai/dto';
+import { ImageDto } from 'src/cloudinary/dtos';
 
 @Entity()
 export class Ticket {
@@ -52,7 +52,7 @@ export class Ticket {
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'createdBy' })
-  userId!: number;
+  user!: User;
 
   @Column()
   createdBy!: number;
@@ -84,17 +84,24 @@ export class Ticket {
   })
   operatingSystem!: OperatingSystem;
 
-  @Column( 'jsonb', {
-    nullable: true
-  })
-  aiDiagnosis!: TicketDiagnosisResponse;
+  @Column('jsonb', { nullable: true })
+  aiDiagnosis!: TicketDiagnosisResponse | null;
 
-  @CreateDateColumn()
+  @CreateDateColumn({
+    type: 'timestamptz',
+  })
   createdAt!: Date;
 
-  @DeleteDateColumn()
+  @DeleteDateColumn({
+    type: 'timestamptz',
+  })
   deletedAt!: Date;
 
   @Column('timestamp', { nullable: true })
-  closedAt!: Date;
+  closedAt!: Date | null;
+
+  @Column('text', {
+    nullable: true,
+  })
+  resolution!: string | null;
 }

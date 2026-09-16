@@ -24,12 +24,18 @@ export class UsersController {
     return this.usersService.findAll();
   }
 
+  @Get('with-password/:id')
+  findOneWithPassword(@Param('id', ParseIntPipe) userId: number){
+    return this.usersService.findOneByIdWithPassword(userId);
+  }
+
   @Get(':term')
   findOne(@Param('term') term: string) {
     const value = isNaN(Number(term)) ? term : Number(term);
 
     return this.usersService.findOne(value);
   }
+
 
   @Patch(':id')
   update(

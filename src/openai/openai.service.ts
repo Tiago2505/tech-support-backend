@@ -19,13 +19,19 @@ export class OpenaiService {
       model: 'gpt-5.6-luna',
       input: problemDescription,
       text: {
-        format: technicalDiagnosisFormat
-      }
+        format: technicalDiagnosisFormat,
+      },
     });
+
 
     return response.output_text;
   }
-  async getAgentResponse(message: string, tools: any[], previousResponseId?: string) {
+
+  async getAgentResponse(
+    message: string,
+    tools: any[],
+    previousResponseId?: string,
+  ) {
     return await this.openAi.responses.create({
       model: 'gpt-5.6-luna',
       input: message,

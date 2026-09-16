@@ -91,11 +91,26 @@ export class UsersService {
     }
   }
 
+  async findOneByIdWithPassword(id: number){
+    try {
+      const user = await this.findOne(id);
+
+      if(!user) throw new NotFoundException(`User with id: ${id} not found`);
+
+      const userWithPassword = await this.findOneWithPassword(user.email);
+
+      return userWithPassword;
+    } catch (error) {
+      handleError(error);
+    }
+  }
+
   async update(
     id: number,
     updateUserDto: UpdateUserDto,
     performedById: number,
   ) {
+    console.log(updateUserDto);
     try {
       const user = await this.findOne(id);
 

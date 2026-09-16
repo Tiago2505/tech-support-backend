@@ -17,8 +17,9 @@ import { CreateTicketDto, UpdateTicketDto } from './dto';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { UpdateTicketParams } from './interfaces';
-import { AdminRoleGuard } from 'src/common/guards';
+import { AdminRoleGuard, TechnicianRoleGuard } from 'src/common/guards';
 import path from 'path';
+import { CloseTicketDto } from './dto/close-ticket-dto';
 
 @Controller('tickets')
 export class TicketsController {
@@ -49,6 +50,7 @@ export class TicketsController {
     @UploadedFiles() images: Express.Multer.File[],
     @Req() req: Request,
   ) {
+    console.log(createTicketDto, images);
     return this.ticketsService.create(
       createTicketDto,
       images,
@@ -59,6 +61,25 @@ export class TicketsController {
   @Get()
   findAll() {
     return this.ticketsService.findAll();
+  }
+
+  @Get('/user')
+  findByUser(@Req() req: Request) {
+    return this.ticketsService.findByUser((req as any).user.id);
+  }
+
+  @Get('/:id/with-user')
+  findWithRelations(@Param('id', ParseIntPipe) id: number) {
+    return this.ticketsService.findWithRelations(id);
+  }
+
+  @Get('/:id/claim')
+  @UseGuards(TechnicianRoleGuard)
+  claimTicket(
+    @Req() req: Request,
+    @Param('id', ParseIntPipe) ticketId: number,
+  ) {
+    return this.ticketsService.claim((req as any).user.id, ticketId);
   }
 
   @Get(':id')
@@ -97,6 +118,7 @@ export class TicketsController {
     @Req() req: Request,
     @UploadedFiles() newImages: Express.Multer.File[],
   ) {
+    
     const updateParams: UpdateTicketParams = {
       id,
       updateTicketDto,
@@ -114,7 +136,15 @@ export class TicketsController {
   }
 
   @Post('close/:id')
-  close(@Param('id', ParseIntPipe) id: number) {
-    return this.ticketsService.close(id);
+  close(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() closeTicketDto: CloseTicketDto,
+  ) {
+    return this.ticketsService.close(id, closeTicketDto);
+  }
+
+  @Post('reopen/:id')
+  reopen(@Param('id', ParseIntPipe) id: number) {
+    return this.ticketsService.reopen(id);
   }
 }

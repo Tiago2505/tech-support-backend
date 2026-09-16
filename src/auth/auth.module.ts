@@ -4,7 +4,6 @@ import { AuthController } from './auth.controller';
 import { UsersModule } from 'src/users/users.module';
 import { ConfigModule } from '@nestjs/config';
 import { AuthMiddleware } from 'src/common/middlewares';
-import { SendEmailModule } from 'src/send-email/send-email.module';
 import { VerificationCodeModule } from 'src/verification-code/verification-code.module';
 
 @Module({
@@ -20,16 +19,8 @@ export class AuthModule {
         method: RequestMethod.POST,
       },
       {
-        path: 'auth/forgot-password',
-        method: RequestMethod.POST
-      },
-      {
-        path: 'auth/verify-code',
-        method: RequestMethod.POST
-      },
-      {
-        path: 'auth/reset-password',
-        method: RequestMethod.POST
+        path: 'auth/:id/change-password',
+        method: RequestMethod.POST,
       },
     );
   }

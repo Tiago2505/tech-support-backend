@@ -8,6 +8,7 @@ import { AgentConversation } from './entities/agent.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateAgentConversationDto, UpdateAgentConversationDto } from './dtos';
 import { TicketNotesService } from 'src/ticket-notes/ticket-notes.service';
+import { handleError } from 'src/common';
 
 @Injectable()
 export class AgentService {
@@ -17,7 +18,7 @@ export class AgentService {
 
     private readonly openaiService: OpenaiService,
     private readonly ticketService: TicketsService,
-    private readonly ticketNotesService: TicketNotesService
+    private readonly ticketNotesService: TicketNotesService,
   ) {}
 
   private async create(createAgentConversationDto: CreateAgentConversationDto) {
@@ -40,85 +41,94 @@ export class AgentService {
   }
 
   async chat(message: string, userId: number) {
-    const agentConversation = await this.findOneByUserId(userId);
+    try {
+      const agentConversation = await this.findOneByUserId(userId);
 
-    const response = await this.openaiService.getAgentResponse(
-      message,
-      tools,
-      agentConversation?.responseId,
-    );
+      const response = await this.openaiService.getAgentResponse(
+        message,
+        tools,
+        agentConversation?.responseId,
+      );
 
-    let agentConversationDto: CreateAgentConversationDto = {
-      userId: userId,
-      responseId: response.id,
-    };
-
-    for (const item of response.output) {
-      if (item.type === 'function_call') {
-        if (item.name === 'createTicket') {
-          const args = JSON.parse(item.arguments);
-
-          if (!args.deviceType) {
-            args.deviceType = DeviceType.OTHER;
-          }
-
-          if (!args.operatingSystem) {
-            args.operatingSystem = OperatingSystem.OTHER;
-          }
-
-          const ticket = await this.ticketService.create(args, [], userId);
-
-          const finalResponse = await this.openaiService.getAgentFinalResponse(
-            response.id,
-            {
-              type: 'function_call_output',
-              call_id: item.call_id,
-              output: JSON.stringify(ticket),
-            },
-          );
-
-          agentConversationDto.responseId = finalResponse.id;
-
-          return finalResponse.output_text;
-        } else if (item.name === 'getTicket') {
-          const args = JSON.parse(item.arguments);
-          const ticket = await this.ticketService.findOne(args.id);
-          const ticketNotes = await this.ticketNotesService.findAll(ticket.id);
-
-
-          const ticketInfo = {
-            id: ticket.id,
-            title: ticket.title,
-            status: ticket.status,
-            priority: ticket.priority,
-            categoryTicket: ticket.categoryTicket,
-            notes: ticketNotes.map(note => note.content)
-          };
-
-          const finalResponse = await this.openaiService.getAgentFinalResponse(
-            response.id,
-            {
-              type: 'function_call_output',
-              call_id: item.call_id,
-              output: JSON.stringify(ticketInfo),
-            },
-          );
-
-          return finalResponse.output_text;
-        }
-      }
-    }
-
-    if (!agentConversation) {
-      await this.create(agentConversationDto);
-    } else {
-      const updateAgentConversationDto: UpdateAgentConversationDto = {
-        responseId: agentConversationDto.responseId,
+      let agentConversationDto: CreateAgentConversationDto = {
+        userId: userId,
+        responseId: response.id,
       };
 
-      await this.update(agentConversation.id, updateAgentConversationDto);
-    }
+      for (const item of response.output) {
+        if (item.type === 'function_call') {
+          if (item.name === 'createTicket') {
+            const args = JSON.parse(item.arguments);
 
-    return response.output_text;
+            if (!args.deviceType) {
+              args.deviceType = DeviceType.OTHER;
+            }
+
+            if (!args.operatingSystem) {
+              args.operatingSystem = OperatingSystem.OTHER;
+            }
+
+            const ticket = await this.ticketService.create(args, [], userId);
+
+            const finalResponse =
+              await this.openaiService.getAgentFinalResponse(response.id, {
+                type: 'function_call_output',
+                call_id: item.call_id,
+                output: JSON.stringify(ticket),
+              });
+
+            agentConversationDto.responseId = finalResponse.id;
+
+            return{ 
+              message: finalResponse.output_text
+            }
+
+          } else if (item.name === 'getTicket') {
+            const args = JSON.parse(item.arguments);
+            const ticket = await this.ticketService.findOne(args.id);
+            const ticketNotes = await this.ticketNotesService.findAll(
+              ticket.id,
+            );
+
+            const ticketInfo = {
+              id: ticket.id,
+              title: ticket.title,
+              status: ticket.status,
+              priority: ticket.priority,
+              categoryTicket: ticket.categoryTicket,
+              notes: ticketNotes.map((note) => note.content),
+            };
+
+            const finalResponse =
+              await this.openaiService.getAgentFinalResponse(response.id, {
+                type: 'function_call_output',
+                call_id: item.call_id,
+                output: JSON.stringify(ticketInfo),
+              });
+
+            return { 
+              message: finalResponse.output_text 
+            };
+          }
+        }
+      }
+
+      if (!agentConversation) {
+        await this.create(agentConversationDto);
+      } else {
+        const updateAgentConversationDto: UpdateAgentConversationDto = {
+          responseId: agentConversationDto.responseId,
+        };
+
+        await this.update(agentConversation.id, updateAgentConversationDto);
+      }
+
+      return {
+        message: response.output_text,
+      };
+    } catch (error) {
+      console.log(error);
+      handleError(error);
+    }
   }
 }

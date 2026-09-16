@@ -46,7 +46,12 @@ export class TicketNotesService {
     try {
       await this.ticketService.findOne(ticketId);
 
-      return this.ticketNotesRepository.find({ where: { ticketId: ticketId } });
+      return this.ticketNotesRepository.find({
+        where: { ticketId: ticketId },
+        relations: {
+          user: true,
+        },
+      });
     } catch (error) {
       handleError(error);
     }
@@ -56,6 +61,9 @@ export class TicketNotesService {
     try {
       const ticketNote = await this.ticketNotesRepository.findOne({
         where: { id },
+        relations: {
+          user: true,
+        },
       });
 
       if (!ticketNote)

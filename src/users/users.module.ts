@@ -1,4 +1,4 @@
-import { MiddlewareConsumer, Module } from '@nestjs/common';
+import { forwardRef, MiddlewareConsumer, Module } from '@nestjs/common';
 
 import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
@@ -13,7 +13,7 @@ import { AuthMiddleware } from 'src/common/middlewares';
 
   providers: [UsersService],
 
-  imports: [TypeOrmModule.forFeature([User]), ConfigModule, AuditModule],
+  imports: [TypeOrmModule.forFeature([User]), ConfigModule, forwardRef(() => AuditModule),],
 
   exports: [UsersService],
 })
