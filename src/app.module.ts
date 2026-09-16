@@ -2,18 +2,25 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
-import {TypeOrmModule} from '@nestjs/typeorm';
-import {ConfigModule} from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
-import { JoiValidationSchema } from './common/config';
+import { AuditModule } from './audit/audit.module';
+import { TicketsModule } from './tickets/tickets.module';
+import { JoiValidationSchema } from './common';
+import { CommonModule } from './common/common.module';
+import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { OpenaiModule } from './openai/openai.module';
+import { AgentModule } from './agent/agent.module';
+import { TicketNotesModule } from './ticket-notes/ticket-notes.module';
+import { VerificationCodeModule } from './verification-code/verification-code.module';
+import { SendEmailModule } from './send-email/send-email.module';
 
 @Module({
   imports: [
-
     ConfigModule.forRoot({
-
-      validationSchema: JoiValidationSchema
-
+      validationSchema: JoiValidationSchema,
+      isGlobal: true,
     }),
 
     TypeOrmModule.forRoot({
@@ -25,11 +32,34 @@ import { JoiValidationSchema } from './common/config';
       password: process.env.POSTGRES_PASSWORD,
       autoLoadEntities: true,
       synchronize: true,
+      extra: {
+        options: '-c timezone=America/Tegucigalpa',
+      },
     }),
 
     UsersModule,
 
     AuthModule,
+
+    AuditModule,
+
+    TicketsModule,
+
+    CommonModule,
+
+    ConfigModule,
+
+    CloudinaryModule,
+
+    OpenaiModule,
+
+    AgentModule,
+
+    TicketNotesModule,
+
+    VerificationCodeModule,
+
+    SendEmailModule,
   ],
   controllers: [AppController],
   providers: [AppService],

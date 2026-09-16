@@ -1,0 +1,11 @@
+export enum DeviceType {
+  LAPTOP = 'LAPTOP',
+  DESKTOP = 'DESKTOP',
+  PRINTER = 'PRINTER',
+  MONITOR = 'MONITOR',
+  PHONE = 'PHONE',
+  TABLET = 'TABLET',
+  SERVER = 'SERVER',
+  NETWORK_DEVICE = 'NETWORK_DEVICE',
+  OTHER = 'OTHER',
+}

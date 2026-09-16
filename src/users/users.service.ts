@@ -1,24 +1,30 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ILike, Repository } from 'typeorm';
+import { Like, Repository } from 'typeorm';
 
-import { handleError } from '../common/helpers';
-import { BcryptAdapter } from 'src/common/config';
-import { CreateUserDto, UpdateUserDto } from './dto';
+import { CreateUserDto, CreateUserResponseDto, UpdateUserDto } from './dto';
 import { User } from './entities';
+import { BcryptAdapter, handleError } from 'src/common';
+import { AuditService } from 'src/audit/audit.service';
+import { CreateAuditDto } from 'src/audit/dto';
+import { AuditAction, AuditEntity } from 'src/audit/enums';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+
+    private readonly auditService: AuditService,
   ) {}
 
-  async create(createUserDto: CreateUserDto) {
+  async create(createUserDto: CreateUserDto): Promise<CreateUserResponseDto> {
     try {
       const user = await this.findOne(createUserDto.email);
 
@@ -37,12 +43,11 @@ export class UsersService {
 
       return properties;
     } catch (error) {
-      console.error(error);
       handleError(error);
     }
   }
 
-  async findAll() {
+  async findAll(): Promise<CreateUserResponseDto[]> {
     try {
       return await this.userRepository.find();
     } catch (error) {
@@ -50,20 +55,20 @@ export class UsersService {
     }
   }
 
-  async findOne(term: number | string) {
+  async findOne(term: number | string): Promise<CreateUserResponseDto | null> {
     try {
       let user: User | null;
 
-      if (isNaN(+term)) {
+      if (isNaN(Number(term))) {
         user = await this.userRepository.findOne({
-          where: { email: ILike(`${term}`) },
+          where: { email: Like(`${term}`) },
         });
       } else {
         user = await this.userRepository.findOne({
-          where: { id: +term },
+          where: { id: Number(term) },
         });
       }
-      if (!user || user.deletedAt !== null) return null;
+      if (!user) return null;
 
       const { password, ...properties } = user;
 
@@ -73,11 +78,12 @@ export class UsersService {
     }
   }
 
-  async findOneWithPassword(email: string) {
+  async findOneWithPassword(email: string): Promise<User> {
     try {
       const user = await this.userRepository.findOne({ where: { email } });
 
-      if(!user) throw new NotFoundException(`User with email: ${email} not found`);
+      if (!user)
+        throw new NotFoundException(`User with email: ${email} not found`);
 
       return user;
     } catch (error) {
@@ -85,23 +91,55 @@ export class UsersService {
     }
   }
 
-  async update(id: number, updateUserDto: UpdateUserDto) {
+  async findOneByIdWithPassword(id: number){
     try {
       const user = await this.findOne(id);
 
-      if (!user) throw new NotFoundException(`User with id: ${id} not found`);
+      if(!user) throw new NotFoundException(`User with id: ${id} not found`);
 
-      const { password, ...properties } = updateUserDto;
+      const userWithPassword = await this.findOneWithPassword(user.email);
 
-      await this.userRepository.update(id, properties);
-
-      return properties;
+      return userWithPassword;
     } catch (error) {
       handleError(error);
     }
   }
 
-  async remove(id: number) {
+  async update(
+    id: number,
+    updateUserDto: UpdateUserDto,
+    performedById: number,
+  ) {
+    console.log(updateUserDto);
+    try {
+      const user = await this.findOne(id);
+
+      if (!user) throw new NotFoundException(`User with id: ${id} not found`);
+
+      const { password, email, ...properties } = updateUserDto;
+
+      await this.userRepository.update(id, properties);
+
+      const userUpdated = await this.findOne(id);
+
+      const auditDto: CreateAuditDto = {
+        action: AuditAction.UPDATE,
+        entity: AuditEntity.USER,
+        affectedRecordId: id,
+      };
+
+      await this.auditService.create(performedById, auditDto);
+
+      return userUpdated;
+    } catch (error) {
+      handleError(error);
+    }
+  }
+
+  async remove(
+    id: number,
+    performedById: number,
+  ): Promise<CreateUserResponseDto> {
     try {
       const user = await this.findOne(id);
 
@@ -109,9 +147,40 @@ export class UsersService {
 
       await this.userRepository.softDelete(id);
 
+      const auditDto: CreateAuditDto = {
+        action: AuditAction.DELETE,
+        entity: AuditEntity.USER,
+        affectedRecordId: id,
+      };
+
+      await this.auditService.create(performedById, auditDto);
+
       return user;
     } catch (error) {
       handleError(error);
     }
   }
+
+  async updatePassword(id: number, newPassword: string){
+
+    try {
+      await this.userRepository.update(id, {
+        password: newPassword
+      });
+
+      const auditDto: CreateAuditDto ={
+        entity: AuditEntity.USER,
+        action: AuditAction.UPDATE,
+        affectedRecordId: id
+      }
+
+      await this.auditService.create(id, auditDto);
+
+    } catch (error) {
+      handleError(error);
+    }
+
+
+  }
+
 }
